@@ -1,0 +1,12 @@
+name: HungerGames
+version: '1.0-SNAPSHOT'
+main: de.hungerGames.HungerGames
+api-version: '1.21'
+authors: [ Rael ]
+description: hunger games prime
+
+commands:
+  hg:
+    description: Hunger Games Command
+    usage: /hg <start|stop>
+    permission: hungerGames.admin

@@ -1,0 +1,8 @@
+de\hungerGames\listeners\PlayerDeathListener.class
+de\hungerGames\HungerGames.class
+de\hungerGames\managers\ConfigManager.class
+de\hungerGames\managers\GameManager$PlayerData.class
+de\hungerGames\commands\GameCommand.class
+de\hungerGames\managers\GameManager.class
+de\hungerGames\listeners\PlayerDamageListener.class
+de\hungerGames\managers\ScoreboardManager.class

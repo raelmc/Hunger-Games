@@ -42,7 +42,7 @@ public class HungerGames extends JavaPlugin {
         if (gameManager != null) {
             gameManager.stopGame();
         }
-        getLogger().info("§c✗ Hunger Games Plugin deaktiviert!");
+        getLogger().info("§cHunger Games Plugin deaktiviert!");
     }
 
     private void registerListeners() {

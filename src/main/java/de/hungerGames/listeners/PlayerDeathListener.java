@@ -7,7 +7,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 
 public class PlayerDeathListener implements Listener {
 
-    private HungerGames plugin;
+    private final HungerGames plugin;
 
     public PlayerDeathListener(HungerGames plugin) {
         this.plugin = plugin;

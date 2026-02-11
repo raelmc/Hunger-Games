@@ -26,6 +26,8 @@ public class GameManager {
 
     private long sessionStart;
 
+    private long sessionDurationSeconds;
+
     private final Map<UUID, PlayerData> playerData = new HashMap<>();
 
     public GameManager(HungerGames plugin) {
@@ -46,6 +48,13 @@ public class GameManager {
         }
 
         border = world.getWorldBorder();
+
+        // Dauer aus Config
+        int minutes = plugin.getConfigManager()
+                .getInt("sessions.duration-minutes", 60);
+
+        sessionDurationSeconds = minutes * 60L;
+
         setupBorder();
 
         gameActive = true;
@@ -53,7 +62,6 @@ public class GameManager {
         sessionStart = System.currentTimeMillis();
 
         initPlayers();
-        startBorderTask();
         startGameTask();
 
         applySessionLogic();
@@ -152,45 +160,57 @@ public class GameManager {
         applySessionLogic();
     }
 
+    private void animateBorder(double targetSize) {
+
+        long shrinkTime = sessionDurationSeconds; // komplette Session
+
+        broadcast("§4⚠ BORDER SCHRUMPFT AUF " + (int) targetSize);
+
+        border.setSize(targetSize, shrinkTime);
+    }
+
     private void applySessionLogic() {
+
         broadcast("§6§lSESSION " + session + " STARTET!");
+
+        int startSize = plugin.getConfigManager()
+                .getInt("border.start-size", 2500);
+
+        int finalSize = plugin.getConfigManager()
+                .getInt("border.final-size", 15);
 
         switch (session) {
 
             case 1:
-                borderSize = 10;
-                borderTarget = 2500;
-                border.setSize(borderSize);
+                border.setSize(startSize);
                 break;
 
             case 2:
             case 3:
             case 4:
             case 5:
-                borderSize = 2500;
-                borderTarget = 2500;
-                border.setSize(borderSize);
+                // bleibt gleich
                 break;
 
             case 6:
-                shrinkTo(2000);
+                animateBorder(2000);
                 break;
 
             case 7:
-                shrinkTo(1500);
+                animateBorder(1500);
                 break;
 
             case 8:
-                shrinkTo(1000);
+                animateBorder(1000);
                 break;
 
             case 9:
-                shrinkTo(500);
+                animateBorder(500);
                 break;
 
             case 10:
                 broadcast("§4§l⚠ FINALE!");
-                border.setSize(15, 120); // 2 Minuten animiert
+                border.setSize(finalSize, 120); // 2 Minuten animiert
                 break;
 
             default:
@@ -198,7 +218,6 @@ public class GameManager {
                 break;
         }
     }
-
 
     private void shrinkTo(double size) {
         borderTarget = size;
@@ -304,9 +323,7 @@ public class GameManager {
     }
 
     public long getRemainingTimeSeconds() {
-        long total = 60 * 60; // 1 Stunde
         long elapsed = (System.currentTimeMillis() - sessionStart) / 1000;
-        return Math.max(0, total - elapsed);
+        return Math.max(0, sessionDurationSeconds - elapsed);
     }
-
 }

@@ -38,3 +38,4 @@ sessions:
   start-time: "15:45"
   end-time: "16:45"
   timezone: "GMT+1"
+  duration-minutes: 60

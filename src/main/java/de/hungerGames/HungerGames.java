@@ -1,5 +1,7 @@
 package de.hungerGames;
 
+import de.hungerGames.listeners.BlockBreakListener;
+import de.hungerGames.listeners.PlayerJoinListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import de.hungerGames.listeners.PlayerDeathListener;
@@ -19,7 +21,12 @@ public class HungerGames extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        
+
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            gameManager.updateAllScoreboards();
+        }, 0L, 20L);
+
+
         // Konfiguration laden
         configManager = new ConfigManager(this);
         configManager.loadConfig();
@@ -48,6 +55,8 @@ public class HungerGames extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDamageListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this, gameManager), this);
+        getServer().getPluginManager().registerEvents(new BlockBreakListener(gameManager), this);
     }
 
     private void registerCommands() {

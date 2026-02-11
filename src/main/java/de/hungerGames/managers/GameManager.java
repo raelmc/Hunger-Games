@@ -4,9 +4,10 @@ import de.hungerGames.HungerGames;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.WorldBorder;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class GameManager {
 
@@ -19,14 +20,13 @@ public class GameManager {
     private WorldBorder border;
 
     private BukkitTask gameTask;
-    private BukkitTask borderTask;
-
-    private double borderSize;
-    private double borderTarget;
+    private BukkitTask sessionTask;
 
     private long sessionStart;
-
     private long sessionDurationSeconds;
+
+    private boolean buildEnabled = false;
+
 
     private final Map<UUID, PlayerData> playerData = new HashMap<>();
 
@@ -39,6 +39,7 @@ public class GameManager {
        ===================================================== */
 
     public void startGame() {
+
         if (gameActive) return;
 
         world = Bukkit.getWorld("world");
@@ -48,14 +49,12 @@ public class GameManager {
         }
 
         border = world.getWorldBorder();
+        setupBorder();
 
-        // Dauer aus Config
         int minutes = plugin.getConfigManager()
                 .getInt("sessions.duration-minutes", 60);
 
         sessionDurationSeconds = minutes * 60L;
-
-        setupBorder();
 
         gameActive = true;
         session = 1;
@@ -63,61 +62,52 @@ public class GameManager {
 
         initPlayers();
         startGameTask();
+        startSessionTimer();
 
         applySessionLogic();
+
         broadcast("§6§lHUNGER GAMES STARTET!");
     }
 
-    private boolean countdownRunning = false;
-    private int countdownTaskId = -1;
-
-    public void startGameCountdown() {
-        if (gameActive || countdownRunning) return;
-
-        countdownRunning = true;
-        final int[] time = {15};
-
-        broadcast("§6§lHUNGER GAMES");
-        broadcast("§7Startet in §e15 §7Sekunden!");
-
-        countdownTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
-                plugin,
-                () -> {
-
-                    if (time[0] == 0) {
-                        Bukkit.getScheduler().cancelTask(countdownTaskId);
-                        countdownRunning = false;
-
-                        broadcast("§a§lLos geht's!");
-                        startGame();
-                        return;
-                    }
-
-                    if (time[0] <= 5 || time[0] == 10 || time[0] == 15) {
-                        broadcast("§7Start in §e" + time[0] + " §7Sekunden");
-                        Bukkit.getOnlinePlayers().forEach(p ->
-                                p.playSound(p.getLocation(),
-                                        Sound.BLOCK_NOTE_BLOCK_PLING,
-                                        1f, 1f)
-                        );
-                    }
-
-                    time[0]--;
-
-                },
-                0L,
-                20L
-        );
-    }
-
     public void stopGame() {
+
         gameActive = false;
 
         if (gameTask != null) gameTask.cancel();
-        if (borderTask != null) borderTask.cancel();
+        if (sessionTask != null) sessionTask.cancel();
 
         broadcast("§c§lHUNGER GAMES BEENDET!");
     }
+
+    public boolean isBuildEnabled() {
+        return buildEnabled;
+    }
+
+    public void prepareLobby() {
+
+        world = Bukkit.getWorld("world");
+        if (world == null) return;
+
+        border = world.getWorldBorder();
+
+        border.setCenter(0, 0);
+        border.setSize(10);
+        border.setDamageAmount(0);
+
+        gameActive = false;
+        session = 0;
+        buildEnabled = false;
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+
+            player.teleport(new Location(world, 0.5, world.getHighestBlockYAt(0,0) + 1, 0.5));
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setInvulnerable(true);
+
+            plugin.getScoreboardManager().createScoreboard(player);
+        }
+    }
+
 
     /* =====================================================
        BORDER
@@ -130,43 +120,31 @@ public class GameManager {
         border.setWarningDistance(10);
     }
 
-    private void startBorderTask() {
-        borderTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            if (!gameActive) return;
-
-            if (borderSize < borderTarget) {
-                borderSize = Math.min(borderSize + 5, borderTarget);
-                border.setSize(borderSize);
-            }
-
-            if (borderSize > borderTarget) {
-                borderSize = Math.max(borderSize - 5, borderTarget);
-                border.setSize(borderSize);
-            }
-
-        }, 0L, 10L);
-    }
-
     /* =====================================================
-       SESSIONS
+       SESSION SYSTEM
        ===================================================== */
 
+    private void startSessionTimer() {
+
+        sessionTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+
+            if (!gameActive) return;
+
+            if (getRemainingTimeSeconds() <= 0) {
+                nextSession();
+            }
+
+        }, 20L, 20L);
+    }
+
     public void nextSession() {
+
         if (!gameActive) return;
 
         session++;
         sessionStart = System.currentTimeMillis();
 
         applySessionLogic();
-    }
-
-    private void animateBorder(double targetSize) {
-
-        long shrinkTime = sessionDurationSeconds; // komplette Session
-
-        broadcast("§4⚠ BORDER SCHRUMPFT AUF " + (int) targetSize);
-
-        border.setSize(targetSize, shrinkTime);
     }
 
     private void applySessionLogic() {
@@ -182,35 +160,38 @@ public class GameManager {
         switch (session) {
 
             case 1:
-                border.setSize(startSize);
+                // Von 10 → 2500
+                border.setSize(10);
+                border.setSize(startSize, 300);
                 break;
 
             case 2:
             case 3:
             case 4:
             case 5:
-                // bleibt gleich
+                // Bleibt bei 2500
+                border.setSize(startSize);
                 break;
 
             case 6:
-                animateBorder(2000);
+                border.setSize(2000, sessionDurationSeconds);
                 break;
 
             case 7:
-                animateBorder(1500);
+                border.setSize(1500, sessionDurationSeconds);
                 break;
 
             case 8:
-                animateBorder(1000);
+                border.setSize(1000, sessionDurationSeconds);
                 break;
 
             case 9:
-                animateBorder(500);
+                border.setSize(500, sessionDurationSeconds);
                 break;
 
             case 10:
                 broadcast("§4§l⚠ FINALE!");
-                border.setSize(finalSize, 120); // 2 Minuten animiert
+                border.setSize(15, sessionDurationSeconds);
                 break;
 
             default:
@@ -219,17 +200,14 @@ public class GameManager {
         }
     }
 
-    private void shrinkTo(double size) {
-        borderTarget = size;
-        broadcast("§4⚠ BORDER SCHRUMPFT AUF " + (int) size);
-    }
-
     /* =====================================================
        GAME LOOP
        ===================================================== */
 
     private void startGameTask() {
+
         gameTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+
             if (!gameActive) return;
 
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -240,31 +218,31 @@ public class GameManager {
     }
 
     /* =====================================================
-       PLAYERS
+       PLAYER SYSTEM
        ===================================================== */
 
     private void initPlayers() {
+
         for (Player player : Bukkit.getOnlinePlayers()) {
+
             playerData.put(player.getUniqueId(), new PlayerData(player));
             plugin.getScoreboardManager().createScoreboard(player);
         }
     }
 
-    public boolean isGameActive() {
-        return gameActive;
-    }
-
     public void playerDeath(Player player) {
-        PlayerData data = getPlayerData(player);
+
+        PlayerData data = playerData.get(player.getUniqueId());
         if (data == null) return;
 
         data.lives--;
         data.deaths++;
 
         Bukkit.broadcastMessage(
-                "§c" + player.getName() + " §7ist gestorben! §8(§e" + data.getLives() + " §7/ 5 Leben§8)"
+                "§c" + player.getName() +
+                        " §7ist gestorben! §8(§e" +
+                        data.lives + " §7/ 5 Leben§8)"
         );
-
 
         if (data.lives <= 0) {
             player.setGameMode(GameMode.SPECTATOR);
@@ -272,18 +250,22 @@ public class GameManager {
         }
     }
 
-
     public void addKill(Player killer) {
+
         PlayerData data = playerData.get(killer.getUniqueId());
         if (data != null) data.kills++;
     }
 
     /* =====================================================
-       UTILS
+       UTIL
        ===================================================== */
 
     private void broadcast(String msg) {
         Bukkit.getOnlinePlayers().forEach(p -> p.sendMessage(msg));
+    }
+
+    public boolean isGameActive() {
+        return gameActive;
     }
 
     public int getSession() {
@@ -294,8 +276,14 @@ public class GameManager {
         return border.getSize();
     }
 
-    public long getSessionTimeSeconds() {
-        return (System.currentTimeMillis() - sessionStart) / 1000;
+    public long getRemainingTimeSeconds() {
+
+        long elapsed = (System.currentTimeMillis() - sessionStart) / 1000;
+        return Math.max(0, sessionDurationSeconds - elapsed);
+    }
+
+    public void updateAllScoreboards() {
+        plugin.getScoreboardManager().updateAllScoreboards(this);
     }
 
     /* =====================================================
@@ -303,6 +291,7 @@ public class GameManager {
        ===================================================== */
 
     public static class PlayerData {
+
         private final Player player;
         private int lives = 5;
         private int kills = 0;
@@ -318,12 +307,7 @@ public class GameManager {
         public int getDeaths() { return deaths; }
     }
 
-    public GameManager.PlayerData getPlayerData(Player player) {
+    public PlayerData getPlayerData(Player player) {
         return playerData.get(player.getUniqueId());
-    }
-
-    public long getRemainingTimeSeconds() {
-        long elapsed = (System.currentTimeMillis() - sessionStart) / 1000;
-        return Math.max(0, sessionDurationSeconds - elapsed);
     }
 }

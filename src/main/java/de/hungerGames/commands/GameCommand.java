@@ -22,6 +22,7 @@ public class GameCommand implements CommandExecutor {
         if (args.length == 0) {
             player.sendMessage("§c/hg start - Spiel starten");
             player.sendMessage("§c/hg stop - Spiel beenden");
+            player.sendMessage("§c/hg setup - Spiel setup lobby");
             return true;
         }
 
@@ -40,6 +41,15 @@ public class GameCommand implements CommandExecutor {
                 return true;
             }
             plugin.getGameManager().stopGame();
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("setup")) {
+            if (!player.isOp()) {
+                player.sendMessage("§cKeine Berechtigung!");
+                return true;
+            }
+            plugin.getGameManager().prepareLobby();
             return true;
         }
 

@@ -16,15 +16,6 @@ combat-log-timer: 20
 # PvP Disable Zeit nach Tod (Minuten)
 pvp-disable-time: 5
 
-# Supply Drops
-supply-drops:
-  enabled: true
-  items-per-drop: 3
-
-# Teams
-teams:
-  cross-alliances-until-session: 5
-
 # Nachrichten Farben
 messages:
   death: "§c"

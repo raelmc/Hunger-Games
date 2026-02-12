@@ -10,9 +10,6 @@ border:
 lives:
   start-lives: 5
 
-# Combat Log Timer (Sekunden)
-combat-log-timer: 20
-
 # PvP Disable Zeit nach Tod (Minuten)
 pvp-disable-time: 5
 
@@ -25,8 +22,4 @@ messages:
 
 # Session Zeiten
 sessions:
-  day: "Freitag"
-  start-time: "15:45"
-  end-time: "16:45"
-  timezone: "GMT+1"
-  duration-minutes: 60
+  duration-minutes: 3

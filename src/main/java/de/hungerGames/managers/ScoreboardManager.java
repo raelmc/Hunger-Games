@@ -27,31 +27,42 @@ public class ScoreboardManager {
         );
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Spacer lines (wichtig für schönes Layout)
-        objective.getScore("§7 ").setScore(10);
+        objective.getScore("§7 ").setScore(11);
 
+        // SESSION
+        Team session = scoreboard.registerNewTeam("session");
+        session.addEntry("§bSession:");
+        objective.getScore("§bSession:").setScore(10);
+
+        objective.getScore("§7  ").setScore(9);
+
+        // ZEIT
         Team time = scoreboard.registerNewTeam("time");
         time.addEntry("§fZeit:");
         objective.getScore("§fZeit:").setScore(8);
 
-        objective.getScore("§7  ").setScore(7);
+        objective.getScore("§7   ").setScore(7);
 
+        // LIVES
         Team lives = scoreboard.registerNewTeam("lives");
         lives.addEntry("§cLeben:");
         objective.getScore("§cLeben:").setScore(5);
 
+        // KILLS
         Team kills = scoreboard.registerNewTeam("kills");
         kills.addEntry("§eKills:");
         objective.getScore("§eKills:").setScore(4);
 
-        objective.getScore("§7   ").setScore(2);
+        objective.getScore("§7    ").setScore(3);
 
+        // BORDER
         Team border = scoreboard.registerNewTeam("border");
         border.addEntry("§aBorder:");
-        objective.getScore("§aBorder:").setScore(1);
+        objective.getScore("§aBorder:").setScore(2);
 
         player.setScoreboard(scoreboard);
     }
+
 
     /* =====================================================
        UPDATE
@@ -64,10 +75,15 @@ public class ScoreboardManager {
         GameManager.PlayerData data = gameManager.getPlayerData(player);
         if (data == null) return;
 
+        Team session = scoreboard.getTeam("session");
         Team lives = scoreboard.getTeam("lives");
         Team kills = scoreboard.getTeam("kills");
         Team border = scoreboard.getTeam("border");
         Team time = scoreboard.getTeam("time");
+
+        if (session != null) {
+            session.setSuffix(" §f" + gameManager.getSession());
+        }
 
         if (lives != null) {
             lives.setSuffix(" §f" + data.getLives());

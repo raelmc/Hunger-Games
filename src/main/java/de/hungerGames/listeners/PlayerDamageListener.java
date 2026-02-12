@@ -8,7 +8,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 public class PlayerDamageListener implements Listener {
 
-    private HungerGames plugin;
+    private final HungerGames plugin;
 
     public PlayerDamageListener(HungerGames plugin) {
         this.plugin = plugin;
@@ -16,13 +16,24 @@ public class PlayerDamageListener implements Listener {
 
     @EventHandler
     public void onPlayerDamage(EntityDamageByEntityEvent event) {
+
         if (!plugin.getGameManager().isGameActive()) return;
 
-        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player)) return;
+        if (!(event.getEntity() instanceof Player)) return;
+        if (!(event.getDamager() instanceof Player)) return;
 
         Player damaged = (Player) event.getEntity();
         Player damager = (Player) event.getDamager();
 
-        // PvP Logik hier
+        if (plugin.getGameManager().hasPvpProtection(damaged)) {
+            event.setCancelled(true);
+            damager.sendMessage("§cDieser Spieler hat noch PvP-Schutz!");
+            return;
+        }
+
+        if (plugin.getGameManager().hasPvpProtection(damager)) {
+            event.setCancelled(true);
+            damager.sendMessage("§cDu hast noch PvP-Schutz!");
+        }
     }
 }

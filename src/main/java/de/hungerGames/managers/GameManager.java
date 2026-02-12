@@ -25,10 +25,10 @@ public class GameManager {
     private long sessionStart;
     private long sessionDurationSeconds;
 
-    private boolean buildEnabled = false;
-
+    private final Map<UUID, Long> pvpProtection = new HashMap<>();
 
     private final Map<UUID, PlayerData> playerData = new HashMap<>();
+
 
     public GameManager(HungerGames plugin) {
         this.plugin = plugin;
@@ -77,11 +77,31 @@ public class GameManager {
         if (sessionTask != null) sessionTask.cancel();
 
         broadcast("§c§lHUNGER GAMES BEENDET!");
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setInvulnerable(true);
+        }
     }
 
-    public boolean isBuildEnabled() {
-        return buildEnabled;
+    public boolean hasPvpProtection(Player player) {
+        Long end = pvpProtection.get(player.getUniqueId());
+        if (end == null) return false;
+
+        if (System.currentTimeMillis() > end) {
+            pvpProtection.remove(player.getUniqueId());
+            return false;
+        }
+
+        return true;
     }
+
+    public void givePvpProtection(Player player, int seconds) {
+        long end = System.currentTimeMillis() + (seconds * 1000L);
+        pvpProtection.put(player.getUniqueId(), end);
+    }
+
 
     public void prepareLobby() {
 
@@ -96,7 +116,6 @@ public class GameManager {
 
         gameActive = false;
         session = 0;
-        buildEnabled = false;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
 
@@ -162,7 +181,7 @@ public class GameManager {
             case 1:
                 // Von 10 → 2500
                 border.setSize(10);
-                border.setSize(startSize, 300);
+                border.setSize(startSize, 60);
                 break;
 
             case 2:
@@ -226,6 +245,13 @@ public class GameManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
 
             playerData.put(player.getUniqueId(), new PlayerData(player));
+
+            // Survival aktivieren
+            player.setGameMode(GameMode.SURVIVAL);
+
+            // Unverwundbarkeit deaktivieren
+            player.setInvulnerable(false);
+
             plugin.getScoreboardManager().createScoreboard(player);
         }
     }
@@ -238,17 +264,32 @@ public class GameManager {
         data.lives--;
         data.deaths++;
 
-        Bukkit.broadcastMessage(
-                "§c" + player.getName() +
-                        " §7ist gestorben! §8(§e" +
-                        data.lives + " §7/ 5 Leben§8)"
-        );
+
+        if (data.lives >= 2) {
+            Bukkit.broadcastMessage(
+                    "§c" + player.getName() +
+                            " §7ist gestorben! §8(§e" +
+                            data.lives + " §7/ 5 Leben§8)"
+            );
+        }
 
         if (data.lives <= 0) {
+
             player.setGameMode(GameMode.SPECTATOR);
-            Bukkit.broadcastMessage("§6" + player.getName() + " ist ausgeschieden!");
+            player.setInvulnerable(true);
+
+            Bukkit.broadcastMessage(
+                    "§6" + player.getName() + " §7ist ausgeschieden!"
+            );
+
+            return; // Wichtig!
         }
+
+        // Nur wenn noch Leben übrig
+        givePvpProtection(player, 300);
+        player.sendMessage("§eDu hast 5 Minuten PvP-Schutz!");
     }
+
 
     public void addKill(Player killer) {
 

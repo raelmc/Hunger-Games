@@ -1,6 +1,5 @@
 package de.hungerGames;
 
-import de.hungerGames.listeners.BlockBreakListener;
 import de.hungerGames.listeners.PlayerJoinListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -56,7 +55,6 @@ public class HungerGames extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerDeathListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this, gameManager), this);
-        getServer().getPluginManager().registerEvents(new BlockBreakListener(gameManager), this);
     }
 
     private void registerCommands() {

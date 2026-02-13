@@ -22,4 +22,4 @@ messages:
 
 # Session Zeiten
 sessions:
-  duration-minutes: 3
+  duration-minutes: 60

@@ -22,6 +22,8 @@ public class GameManager {
     private BukkitTask gameTask;
     private BukkitTask sessionTask;
 
+    private BukkitTask borderDelayTask;
+
     private long sessionStart;
     private long sessionDurationSeconds;
 
@@ -56,8 +58,13 @@ public class GameManager {
 
         sessionDurationSeconds = minutes * 60L;
 
+        if (session == 0) {
+            session = 1;
+        } else {
+            session++;
+        }
+
         gameActive = true;
-        session = 1;
         sessionStart = System.currentTimeMillis();
 
         initPlayers();
@@ -77,6 +84,8 @@ public class GameManager {
         if (sessionTask != null) sessionTask.cancel();
 
         broadcast("§c§lHUNGER GAMES BEENDET!");
+
+        if (borderDelayTask != null) borderDelayTask.cancel();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
 
@@ -150,7 +159,8 @@ public class GameManager {
             if (!gameActive) return;
 
             if (getRemainingTimeSeconds() <= 0) {
-                nextSession();
+                stopGame();
+                return;
             }
 
         }, 20L, 20L);
@@ -164,6 +174,42 @@ public class GameManager {
         sessionStart = System.currentTimeMillis();
 
         applySessionLogic();
+    }
+
+    private void startDelayedBorderShrink(double targetSize) {
+
+        long halfTime = sessionDurationSeconds / 2;
+        long delayTicks = halfTime * 20L;
+
+        // Task speichern damit wir sie ggf. abbrechen können
+        borderDelayTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            if (!gameActive) return;
+
+            broadcast("§c⚠ Die Border beginnt sich jetzt zu verkleinern!");
+
+            // 5 Sekunden Countdown
+            for (int i = 5; i >= 1; i--) {
+                int seconds = i;
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (!gameActive) return;
+                    broadcast("§eBorder shrink in §c" + seconds + "§e...");
+                }, (5 - i) * 20L);
+            }
+
+            // Nach 5 Sekunden Shrink starten
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!gameActive) return;
+
+                broadcast("§4§lDie Border schrumpft jetzt!");
+
+                // Shrink über zweite Hälfte
+                border.setSize(targetSize, halfTime);
+
+            }, 5 * 20L);
+
+        }, delayTicks - (10 * 20L)); // 10 Sekunden vorher warnen
     }
 
     private void applySessionLogic() {
@@ -193,24 +239,24 @@ public class GameManager {
                 break;
 
             case 6:
-                border.setSize(2000, sessionDurationSeconds);
+                startDelayedBorderShrink(2000);
                 break;
 
             case 7:
-                border.setSize(1500, sessionDurationSeconds);
+                startDelayedBorderShrink(1500);
                 break;
 
             case 8:
-                border.setSize(1000, sessionDurationSeconds);
+                startDelayedBorderShrink(1000);
                 break;
 
             case 9:
-                border.setSize(500, sessionDurationSeconds);
+                startDelayedBorderShrink(500);
                 break;
 
             case 10:
                 broadcast("§4§l⚠ FINALE!");
-                border.setSize(15, sessionDurationSeconds);
+                startDelayedBorderShrink(finalSize);
                 break;
 
             default:
@@ -265,7 +311,7 @@ public class GameManager {
         data.deaths++;
 
 
-        if (data.lives >= 2) {
+        if (data.lives >= 1) {
             Bukkit.broadcastMessage(
                     "§c" + player.getName() +
                             " §7ist gestorben! §8(§e" +
@@ -318,7 +364,6 @@ public class GameManager {
     }
 
     public long getRemainingTimeSeconds() {
-
         long elapsed = (System.currentTimeMillis() - sessionStart) / 1000;
         return Math.max(0, sessionDurationSeconds - elapsed);
     }

@@ -91,6 +91,23 @@ public class GameManager {
 
             player.setGameMode(GameMode.ADVENTURE);
             player.setInvulnerable(true);
+
+            // TITLE
+            player.sendTitle(
+                    "§4§lSPIEL BEENDET!",
+                    "§7Danke fürs Spielen",
+                    10,   // fade in
+                    80,   // stay
+                    20    // fade out
+            );
+
+            // ENDERDRAGON SOUND
+            player.playSound(
+                    player.getLocation(),
+                    Sound.ENTITY_ENDER_DRAGON_DEATH,
+                    1.0f,
+                    1.0f
+            );
         }
     }
 
@@ -341,6 +358,21 @@ public class GameManager {
 
         PlayerData data = playerData.get(killer.getUniqueId());
         if (data != null) data.kills++;
+    }
+
+    public void setLives(Player player, int lives) {
+
+        PlayerData data = playerData.get(player.getUniqueId());
+        if (data == null) return;
+
+        data.lives = lives;
+
+        if (lives <= 0) {
+            player.setGameMode(GameMode.SPECTATOR);
+            player.setInvulnerable(true);
+        }
+
+        updateAllScoreboards();
     }
 
     /* =====================================================

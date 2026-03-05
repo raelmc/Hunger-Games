@@ -23,6 +23,7 @@ public class GameCommand implements CommandExecutor {
             player.sendMessage("§c/hg start - Spiel starten");
             player.sendMessage("§c/hg stop - Spiel beenden");
             player.sendMessage("§c/hg setup - Spiel setup lobby");
+            player.sendMessage("§c/hg setlives <player> <anzahl> - Setze die spieler eines bestimmten Spielers fest");
             return true;
         }
 
@@ -50,6 +51,41 @@ public class GameCommand implements CommandExecutor {
                 return true;
             }
             plugin.getGameManager().prepareLobby();
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("setlives")) {
+
+            if (!player.isOp()) {
+                player.sendMessage("§cKeine Berechtigung!");
+                return true;
+            }
+
+            if (args.length < 3) {
+                player.sendMessage("§cUsage: /hg setlives <player> <anzahl>");
+                return true;
+            }
+
+            Player target = plugin.getServer().getPlayer(args[1]);
+
+            if (target == null) {
+                player.sendMessage("§cSpieler nicht gefunden!");
+                return true;
+            }
+
+            int lives;
+
+            try {
+                lives = Integer.parseInt(args[2]);
+            } catch (NumberFormatException e) {
+                player.sendMessage("§cBitte eine gültige Zahl eingeben!");
+                return true;
+            }
+
+            plugin.getGameManager().setLives(target, lives);
+
+            player.sendMessage("§aDu hast die Leben von §e" + target.getName() + " §aauf §6" + lives + " §agesetzt.");
+
             return true;
         }
 
